@@ -1,43 +1,74 @@
-import getLocation from './location.js';
+import locationsArray from '../init-locations.js';
 
+let locationElement = document.getElementById("location");
 
+window.addEventListener('load', main);
+locationElement.addEventListener('click', locationHandler);
+locationElement.addEventListener('touch', locationHandler);
 
+function main() {
+    console.log('Page is fully loaded');
+}
+
+let currentlat;
+let currentlon;
+let error = true;
+
+async function getLocation() {
+    return new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject);
+    }).then(position => {
+        return position;
+    });
+}
 
 async function locationHandler() {
-    const locText = await getLocation();
-    document.getElementById('locationAnswer').innerHTML = locText;
+    let locText = await getLocation();
+    currentlat = locText.coords.latitude;
+    document.getElementById("device-lat").innerHTML = "This is about device-lat: " + currentlat.toFixed(6);
+    currentlon = locText.coords.longitude;
+    document.getElementById("device-long").innerHTML = "This is about device-long: " + currentlon.toFixed(6);
+
+    locationsArray.forEach(function (value) {
+        if (isInside(value.Latitude, value.Longitude)) {
+            document.getElementById("locationAnswer").innerHTML = value.Name;
+            let utterance = new SpeechSynthesisUtterance("You are in range. Welcome to " + value.Name);
+            speechSynthesis.speak(utterance);
+            error = false;
+        }
+    });
+
+    if (error) {
+        document.getElementById("error-message").innerHTML = "You are out of range";
+        let utterance = new SpeechSynthesisUtterance("You are out of range.");
+            speechSynthesis.speak(utterance);
+    } else {
+        document.getElementById("error-message").innerHTML = "";
+    }
 }
 
-
-function clearErrorText() {
-    document.getElementById('error-message').innerHTML = '';
+function isInside(questLat, questLon) {
+    let distance = distanceBetweenLocations(questLat, questLon);
+    console.log("distance: " + distance);
+    if (distance < 30) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
+function distanceBetweenLocations(questLat, questLon) {
+    const R = 6371e3;
+    const φ1 = currentlat * Math.PI / 180;
+    const φ2 = questLat * Math.PI / 180;
+    const Δφ = (questLat - currentlat) * Math.PI / 180;
+    const Δλ = (questLon - currentlon) * Math.PI / 180;
 
+    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+        Math.cos(φ1) * Math.cos(φ2) *
+        Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-// main method
-function main() {
-    console.log('Starting main method...');
-
-    // get references to html elements
-    const locationElement = document.getElementById('location');
-    const errorElement = document.getElementById('error-message');
-
-    // init error to empty string
-    errorElement.innerHTML = '';
-
-    locationElement.addEventListener('click', locationHandler)
-    locationElement.addEventListener('touch', locationHandler);
-    
+    const d = R * c;
+    return d;
 }
-
-
-
-
-
-
-
-
-//starting point where it begins
-window.addEventListener('load', main);
-

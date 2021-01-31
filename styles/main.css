@@ -8,3 +8,11 @@ article {
     font-weight: bold;
     margin-bottom: 10vh;
   }
+
+h1{
+  color: black;
+}
+
+footer{
+  text-align: center;
+}
